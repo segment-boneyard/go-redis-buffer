@@ -1,6 +1,6 @@
 # go-redis-buffer
 
-A buffer that for making batched updates to Redis.
+A buffer for making batched updates to Redis.
 
 Our Redis instances often ended up being the bottleneck for a write-heavy
 workload. Fortunately most of the operations can applied in any order, so we
