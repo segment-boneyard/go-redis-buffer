@@ -1,7 +1,9 @@
 package buffer
 
-import "github.com/garyburd/redigo/redis"
-import "gopkg.in/fatih/set.v0"
+import (
+	"github.com/garyburd/redigo/redis"
+	"gopkg.in/fatih/set.v0"
+)
 
 // Buffer.
 type Buffer struct {

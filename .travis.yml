@@ -1,0 +1,9 @@
+language: go
+
+services: redis
+
+install:
+  - go get -t ./...
+
+go:
+  - 1.4

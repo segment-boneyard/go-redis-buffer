@@ -1,8 +1,12 @@
 package buffer
 
-import "github.com/garyburd/redigo/redis"
-import "github.com/bmizerany/assert"
-import "testing"
+import (
+	"fmt"
+	"testing"
+
+	"github.com/bmizerany/assert"
+	"github.com/garyburd/redigo/redis"
+)
 
 var r *redis.Pool
 
@@ -14,8 +18,18 @@ func dial() (redis.Conn, error) {
 	return redis.Dial("tcp", ":6379")
 }
 
+func setup() *Buffer {
+	conn := r.Get()
+
+	conn.Do("SELECT", 42)
+	conn.Do("FLUSHDB")
+	conn.Flush()
+
+	return New(r)
+}
+
 func TestIncrs(t *testing.T) {
-	b := New(r)
+	b := setup()
 
 	a := "a"
 	b.Incr(a)
@@ -31,7 +45,7 @@ func TestIncrs(t *testing.T) {
 }
 
 func TestSets(t *testing.T) {
-	b := New(r)
+	b := setup()
 
 	a := "a"
 	c := "c"
@@ -50,7 +64,7 @@ func TestSets(t *testing.T) {
 }
 
 func TestExpire(t *testing.T) {
-	b := New(r)
+	b := setup()
 	key := "a"
 
 	b.Expire(key, 10)
@@ -59,8 +73,7 @@ func TestExpire(t *testing.T) {
 }
 
 func TestClear(t *testing.T) {
-	b := New(r)
-
+	b := setup()
 	b.Set("a", "hello")
 	b.Clear()
 
@@ -68,7 +81,7 @@ func TestClear(t *testing.T) {
 }
 
 func TestSAdds(t *testing.T) {
-	b := New(r)
+	b := setup()
 
 	k := "a"
 	v := "hello"
@@ -82,7 +95,7 @@ func TestSAdds(t *testing.T) {
 }
 
 func TestHsets(t *testing.T) {
-	b := New(r)
+	b := setup()
 
 	k := "a"
 	f := "b"
@@ -97,7 +110,7 @@ func TestHsets(t *testing.T) {
 }
 
 func TestLength(t *testing.T) {
-	b := New(r)
+	b := setup()
 
 	b.Set("a", "hello")
 
@@ -105,12 +118,31 @@ func TestLength(t *testing.T) {
 }
 
 func TestFlush(t *testing.T) {
-	b := New(r)
-	b.Set("a", "hello")
+	b := setup()
+
+	b.Set("key", "value")
+	b.Incr("incr")
+	b.Hset("hash", "field", "val")
+	b.Expire("expire", 1)
+	b.SAdd("set", "val")
+
 	flushed := false
 	b.Flush(func(err error) {
 		assert.Equal(t, nil, err)
 		flushed = true
 	})
 	assert.Equal(t, true, flushed)
+}
+
+func TestRedis(t *testing.T) {
+	b := setup()
+
+	for i := 0; i < 10; i++ {
+		b.Incr("key")
+	}
+
+	b.Flush(func(error) {})
+	res, _ := redis.Int64(r.Get().Do("GET", "key"))
+	fmt.Println(res)
+	assert.Equal(t, int64(10), res)
 }
