@@ -1,8 +1,16 @@
 # go-redis-buffer
 
-Buffer that aggregates and flushes redis queries.
+A buffer that for making batched updates to Redis.
 
-Rather than sending 10 `[INCR](http://redis.io/commands/incr)` queries to Redis you could send a single `[INCRBY](http://redis.io/commands/incrby) 10` query to Redis. Simiarily, rather than sending `[SET](http://redis.io/commands/set)` multiple times, sending a single SET with the latest value would be faster and you'd have the same data. The buffer provides an easy way to manage doing this.
+Our Redis instances often ended up being the bottleneck for a write-heavy
+workload. Fortunately most of the operations can applied in any order, so we
+end up batching them up.
+
+Instead of sending 10 `INCR` commands, we send a single `INCRBY 10` command.
+Similarly, we'll send along only the latest `SET` and `MSET` commands.
+
+Note this buffer is *not* concurrency safe. It should be run within a single
+goroutine.
 
 ## Example
 
@@ -10,9 +18,21 @@ Rather than sending 10 `[INCR](http://redis.io/commands/incr)` queries to Redis 
 buf := buffer.New(redis)
 buf.Incr("hello-world")
 buf.Flush(func(err error){
-    fmt.Errorf("redis error: %s, err")
+    if err != nil {
+      fmt.Errorf("redis error: %s, err")
+    }
+    // clear when we're done
+    buf.clear()
 })
 ```
+
+## Supported Operations
+
+ - *INCR*
+ - *SET*
+ - *INCRYBY*
+ - *HSET*
+ - *EXPIRE*
 
 ## License
 
