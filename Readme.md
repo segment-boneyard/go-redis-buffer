@@ -21,9 +21,9 @@ buf.Flush(func(err error){
     if err != nil {
       fmt.Errorf("redis error: %s, err")
     }
-    // clear when we're done
-    buf.clear()
 })
+// clear when we're done
+buf.Clear()
 ```
 
 ## Supported Operations
